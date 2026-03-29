@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import date
 import pawpal_system as pawpal
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
@@ -84,7 +85,7 @@ else:
     with col3:
         frequency   = st.selectbox("Frequency", ["daily", "twice_daily", "weekly"])
         is_required = st.checkbox("Required?", value=True)
-        notes       = st.text_input("Time / notes", value="7:00 AM")
+        notes       = st.text_input("Start time (HH:MM, 24-hr)", value="07:00")
 
     if st.button("Add Task"):
         new_task = pawpal.CareTask(
@@ -104,31 +105,72 @@ st.divider()
 # ── Today's Schedule ──────────────────────────────────────────────────────────
 st.header("4. Today's Schedule")
 
+sort_mode = st.radio("Sort tasks by", ["Time", "Priority"], horizontal=True)
+
 if st.button("Generate Schedule"):
     if not owner.pets or all(len(p.care_tasks) == 0 for p in owner.pets):
         st.warning("Add pets and tasks first.")
     else:
+        today = date.today().isoformat()
         total_minutes = 0
+
         for pet in owner.pets:
             if not pet.care_tasks:
                 continue
-            st.subheader(f"🐾 {pet.name} ({pet.breed})")
-            for task in pet.get_tasks_by_priority():   # calls Pet.get_tasks_by_priority()
-                badge = "🔴 Required" if task.is_required else "🟡 Optional"
-                st.markdown(
-                    f"**{task.name}** — {badge}  \n"
-                    f"Category: `{task.category}` | "
-                    f"Duration: `{task.duration_minutes} min` | "
-                    f"Priority: `{task.priority}/5`  \n"
-                    f"🕐 {task.notes}"
-                )
-                total_minutes += task.duration_minutes
 
+            # Build a Schedule and sort it using the Scheduler methods
+            schedule = pawpal.Schedule(
+                date=today, owner=owner, pet=pet, tasks=list(pet.care_tasks)
+            )
+            if sort_mode == "Time":
+                schedule.sort_by_time()
+            else:
+                schedule.sort_by_priority()
+
+            st.subheader(f"🐾 {pet.name} ({pet.breed})")
+
+            # ── Conflict warnings ────────────────────────────────────────────
+            conflicts = schedule.get_conflicts()
+            if conflicts:
+                st.error(
+                    f"**{len(conflicts)} scheduling conflict(s) detected** — "
+                    "fix these before starting your day:"
+                )
+                for conflict in conflicts:
+                    # Strip the "CONFLICT [PetName]  " prefix for plain-English display
+                    readable = conflict.split("  ", 1)[-1] if "  " in conflict else conflict
+                    st.warning(f"**Overlap:** {readable}")
+            else:
+                st.success("No scheduling conflicts — all clear!")
+
+            # ── Task table ───────────────────────────────────────────────────
+            rows = [
+                {
+                    "Task": t.name,
+                    "Start": t.notes or "—",
+                    "Duration": f"{t.duration_minutes} min",
+                    "Category": t.category,
+                    "Priority": f"{t.priority}/5",
+                    "Required": "Yes" if t.is_required else "No",
+                }
+                for t in schedule.tasks
+            ]
+            st.table(rows)
+
+            total_minutes += sum(t.duration_minutes for t in schedule.tasks)
+
+        # ── Budget summary ───────────────────────────────────────────────────
         st.divider()
         budget_ok = total_minutes <= owner.available_time_minutes
-        color = "green" if budget_ok else "red"
-        st.markdown(
-            f"**Total care time:** `{total_minutes} min`  \n"
-            f"**Owner budget:** `{owner.available_time_minutes} min`  \n"
-            f"**Status:** :{color}[{'✅ Fits in budget' if budget_ok else '⚠️ Exceeds budget'}]"
-        )
+        if budget_ok:
+            st.success(
+                f"Total care time: **{total_minutes} min** — "
+                f"fits within your {owner.available_time_minutes} min budget."
+            )
+        else:
+            over = total_minutes - owner.available_time_minutes
+            st.error(
+                f"Total care time: **{total_minutes} min** — "
+                f"exceeds your {owner.available_time_minutes} min budget by **{over} min**. "
+                "Consider removing optional tasks."
+            )

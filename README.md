@@ -68,3 +68,10 @@ The implemented methods (`sort_by_time`, `sort_by_priority`, `next_occurrence`, 
 ```bash
 python -m pytest
 ```
+
+# 📸 Demo
+
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)

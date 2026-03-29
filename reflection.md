@@ -63,13 +63,15 @@ AI found some bottlenecks, like Missin Relationships:
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+- I used AI to generate test cases, refactor code, and create the UML design.
+- Fixed some bugs and asked for help understanding some lambdas and functions.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+  In refactor son functions.
 - How did you evaluate or verify what the AI suggested?
+  With test cases and asking why.
 
 ---
 
@@ -78,7 +80,11 @@ AI found some bottlenecks, like Missin Relationships:
 **a. What you tested**
 
 - What behaviors did you test?
+  Generating and scheduling care tasks for a pet, ensuring that required tasks
+  are always included and optional tasks are added based on available time and priority.
 - Why were these tests important?
+  Because they help verify that the scheduling logic works correctly and delivers
+  a reliable experience for the user.
 
 **b. Confidence**
 
@@ -92,11 +98,15 @@ AI found some bottlenecks, like Missin Relationships:
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+  Building a functional MVP from scratch using only the project requirements as context.
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+  Adding multiple views instead of just one, such as a card-based layout.
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+  Learning to go back and update the design to reflect changes made during implementation,
+  keeping the UML and the code in sync.

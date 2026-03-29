@@ -157,7 +157,7 @@ classDiagram
         +list~Pet~ pets
         +add_pet(pet: Pet) None
         +remove_pet(pet_name: str) None
-        +get_total_available_time() int
+        +get_tasks_by_pet(pet_name: str) list~CareTask~
     }
 
     class Pet {
@@ -170,9 +170,10 @@ classDiagram
         +Vet vet
         +list~CareTask~ care_tasks
         +add_task(task: CareTask) None
-        +remove_task(task_name: str) None
+        +remove_task(task_id: str) None
         +get_tasks_by_priority() list~CareTask~
         +get_required_tasks() list~CareTask~
+        +sync_vet_tasks() None
     }
 
     class Vet {
@@ -186,6 +187,7 @@ classDiagram
     }
 
     class CareTask {
+        +str id
         +str name
         +str category
         +int duration_minutes
@@ -193,6 +195,10 @@ classDiagram
         +bool is_required
         +str frequency
         +str notes
+        +bool completed
+        +str scheduled_date
+        +mark_complete() None
+        +next_occurrence() CareTask
         +is_skippable() bool
         +to_dict() dict
     }
@@ -202,12 +208,15 @@ classDiagram
         +Owner owner
         +Pet pet
         +list~CareTask~ tasks
-        +int total_duration_minutes
         +add_task(task: CareTask) None
-        +remove_task(task_name: str) None
+        +remove_task(task_id: str) None
         +fits_in_budget() bool
         +get_total_duration() int
         +sort_by_priority() None
+        +sort_by_time() None
+        +mark_task_complete(task_id: str) CareTask
+        +get_conflicts() list~str~
+        +filter_tasks(completed: bool, pet_name: str) list~CareTask~
     }
 
     class Plan {
@@ -215,7 +224,7 @@ classDiagram
         +str reasoning
         +list~CareTask~ skipped_tasks
         +list~str~ warnings
-        +generate(owner: Owner, pet: Pet) Plan
+        +generate(owner: Owner, pet: Pet, date: str) Plan
         +get_summary() str
         +get_warnings() list~str~
     }
