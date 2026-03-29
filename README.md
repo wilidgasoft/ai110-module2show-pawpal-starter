@@ -41,3 +41,14 @@ pip install -r requirements.txt
 5. Add tests to verify key behaviors.
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
+
+# Smarter Scheduling
+
+The following features were added beyond the starter skeleton:
+
+- **Auto-recurring tasks** — when `mark_task_complete()` is called on a `daily`, `twice_daily`, or `weekly` task, a new instance is automatically created for the next occurrence using Python's `timedelta`. No manual re-entry needed.
+- **Conflict detection** — `Schedule.get_conflicts()` scans all tasks for overlapping time windows using their `HH:MM` start time and `duration_minutes`. It returns plain warning strings instead of raising exceptions, so the app stays running.
+- **Sort by time or priority** — `sort_by_time()` orders tasks chronologically using a shared `_to_minutes()` helper; `sort_by_priority()` orders them by urgency (5 → 1). Both sort in-place.
+- **Flexible filtering** — `filter_tasks(completed=..., pet_name=...)` supports filtering by completion status, pet name, or both in a single pass. Either parameter can be omitted.
+- **Owner-level task lookup** — `Owner.get_tasks_by_pet(name)` returns all tasks for a named pet without exposing the internal pet list directly.
+- **Required-task guarantee** — required tasks are always scheduled regardless of the owner's available time budget; optional tasks fill remaining time by priority.

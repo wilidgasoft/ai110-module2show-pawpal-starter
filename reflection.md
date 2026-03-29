@@ -49,13 +49,13 @@ AI found some bottlenecks, like Missin Relationships:
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+- The scheduler considers three constraints: **time** (owner's available minutes per day), **priority** (1–5 scale per task), and **requirement status** (required vs. optional). It also detects **time conflicts** when two tasks overlap based on their start time and duration.
+- Required tasks were treated as the hardest constraint because skipping them has real consequences for the pet's health (medications, feeding). Priority breaks ties among optional tasks. Time budget is checked last — it gates optional tasks but never drops required ones.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+- The scheduler always includes required tasks regardless of the owner's time budget, even if doing so exceeds it. Optional tasks are only added if time remains after required ones are placed.
+- This is reasonable because pet care has non-negotiable duties — skipping a medication or feeding to "fit the budget" would harm the animal. Exceeding the time budget is a recoverable problem; missing a required task is not.
 
 ---
 
