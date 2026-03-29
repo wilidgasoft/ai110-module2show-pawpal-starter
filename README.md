@@ -52,3 +52,19 @@ The following features were added beyond the starter skeleton:
 - **Flexible filtering** — `filter_tasks(completed=..., pet_name=...)` supports filtering by completion status, pet name, or both in a single pass. Either parameter can be omitted.
 - **Owner-level task lookup** — `Owner.get_tasks_by_pet(name)` returns all tasks for a named pet without exposing the internal pet list directly.
 - **Required-task guarantee** — required tasks are always scheduled regardless of the owner's available time budget; optional tasks fill remaining time by priority.
+
+# Testing PawPal+
+
+The test suite (`tests/test_pawpal.py`) covers 15 cases across three areas:
+
+- **Sorting** — verifies `sort_by_time()` returns tasks in chronological order, handles an empty schedule without crashing, and places tasks with no time in `notes` at the front.
+- **Recurrence** — confirms that completing a `daily` task generates a new instance dated one day later, that the new instance has `completed=False` and a fresh UUID, and that unrecognised frequencies (e.g. `"monthly"`) return `None` without error.
+- **Conflict detection** — checks that two tasks at the exact same start time are flagged, that partial overlaps are caught, that back-to-back tasks (one ends when the next starts) are not false positives, and that tasks with no parseable time are skipped cleanly.
+
+**Confidence Level: 3/5 stars**
+
+The implemented methods (`sort_by_time`, `sort_by_priority`, `next_occurrence`, `get_conflicts`, `mark_task_complete`) are well-tested and behave correctly. Confidence is capped at 3 stars because several methods central to the full scheduling workflow — `Schedule.add_task`, `get_total_duration`, `fits_in_budget`, and `Plan.generate` — are currently stubbed with no logic, leaving the end-to-end plan generation untested.
+
+```bash
+python -m pytest
+```
