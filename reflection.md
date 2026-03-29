@@ -4,13 +4,44 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+- Initial UML design.
+
+## 1. Owner
+
+Represents the person using the app.
+
+## 2. Pet
+
+Represents a pet owned by the owner.
+
+## 3. Vet
+
+Represents the pet's veterinarian. Used to store contact info and medical recommendations.
+
+## 4. CareTask
+
+Represents a single pet care activity.
+
+## 5. Schedule
+
+Holds the ordered list of tasks assigned to a specific time window. The raw output before the Plan wraps it with reasoning.
+
+## 6. Plan
+
+Wraps a Schedule and adds the reasoning/explanation shown to the user in the UI.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+AI found some bottlenecks, like Missin Relationships:
+
+1. Vet.recommended_tasks is disconnected from Pet.care_tasks
+   The UML says a Vet prescribes tasks, but there's no bridge. When a vet adds a recommendation, it only lives inside Vet — it never flows into Pet.care_tasks. You'll need a method like Pet.sync_vet_tasks() or handle the merge inside Plan.generate().
+
+2. Owner has no direct link to Schedule
+   The UML shows Owner 1 ── 1 Schedule. Right now Schedule holds a reference to Owner, but Owner has no schedule attribute — the relationship is one-directional. This is fine if Plan.generate() owns the lifecycle, but worth being intentional about it.
+
+3. Plan.generate() takes owner and pet but must also build a Schedule
+   There's no date parameter. Schedule requires a date, so generate() either needs a date argument or must derive it internally. This is a bottleneck waiting to happen.
 
 ---
 
