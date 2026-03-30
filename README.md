@@ -93,12 +93,12 @@ python -m pytest
 
 # Challenge 2 Data Persistence with Agent Mode
 
-    ![alt text](image-4.png)
+![alt text](image-4.png)
 
 # Challenge 3: Advanced Priority Scheduling and UI
 
-    ![alt text](image-5.png)
+![alt text](image-5.png)
 
 # Challenge 4: Professional UI and Output Formatting
 
-    /Users/wilidga/Developer/CodePATH_AI/week 5/ai110-module2show-pawpal-starter/image-6.png
+![alt text](image-6.png)
