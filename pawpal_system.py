@@ -2,7 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from itertools import combinations
+from pathlib import Path
 from uuid import uuid4
+import json
 
 # Built once at import time; reused by every CareTask.next_occurrence() call.
 _FREQUENCY_DELTA: dict[str, timedelta] = {
@@ -178,6 +180,42 @@ class Owner:
         """
         pet = next((p for p in self.pets if p.name == pet_name), None)
         return list(pet.care_tasks) if pet else []
+
+    def save_to_json(self, path: str | Path) -> None:
+        """Serialize this Owner (including all pets and their tasks) to a JSON file.
+
+        Uses OwnerSchema from schemas.py (imported lazily to avoid circular
+        imports at module load time). The file is written atomically by
+        serializing to a string first, then writing in one call.
+
+        Args:
+            path: Destination file path. Parent directories must already exist.
+        """
+        from schemas import OwnerSchema  # lazy import — avoids circular dependency
+        data = OwnerSchema().dump(self)
+        Path(path).write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    @classmethod
+    def load_from_json(cls, path: str | Path) -> Owner:
+        """Deserialize an Owner from a JSON file produced by save_to_json.
+
+        Uses OwnerSchema.load() which calls @post_load hooks on every nested
+        schema, so the return value is a fully reconstructed Owner with live
+        Pet and CareTask instances — not raw dicts.
+
+        Args:
+            path: Path to an existing JSON file.
+
+        Returns:
+            A fully populated Owner instance.
+
+        Raises:
+            FileNotFoundError: if path does not exist.
+            marshmallow.ValidationError: if the JSON fails schema validation.
+        """
+        from schemas import OwnerSchema  # lazy import — avoids circular dependency
+        raw = json.loads(Path(path).read_text(encoding="utf-8"))
+        return OwnerSchema().load(raw)
 
 
 @dataclass

@@ -1,31 +1,52 @@
 import streamlit as st
 from datetime import date
+from pathlib import Path
 import pawpal_system as pawpal
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
 
+_SAVE_FILE = Path("pawpal_data.json")
+
+# ── Persistent data: load once per session ────────────────────────────────────
+if "owner" not in st.session_state:
+    if _SAVE_FILE.exists():
+        try:
+            st.session_state.owner = pawpal.Owner.load_from_json(_SAVE_FILE)
+            st.toast(f"Loaded saved data for '{st.session_state.owner.name}'")
+        except Exception as exc:
+            st.warning(f"Could not load saved data ({exc}). Starting fresh.")
+            st.session_state.owner = pawpal.Owner(name="Jordan", available_time_minutes=120)
+    else:
+        st.session_state.owner = pawpal.Owner(name="Jordan", available_time_minutes=120)
+
 # ── Owner ────────────────────────────────────────────────────────────────────
 st.header("1. Owner")
 
-owner_name = st.text_input("Owner name", value="Jordan")
+owner_name = st.text_input("Owner name", value=st.session_state.owner.name)
 available_time = st.number_input(
-    "Available time today (minutes)", min_value=10, max_value=480, value=120
+    "Available time today (minutes)", min_value=10, max_value=480,
+    value=st.session_state.owner.available_time_minutes,
 )
 
-if st.button("Save Owner"):
-    st.session_state.owner = pawpal.Owner(
-        name=owner_name,
-        available_time_minutes=int(available_time),
-    )
-    st.success(f"Owner '{owner_name}' saved!")
+col_save_owner, col_persist = st.columns(2)
+with col_save_owner:
+    if st.button("Save Owner"):
+        st.session_state.owner = pawpal.Owner(
+            name=owner_name,
+            available_time_minutes=int(available_time),
+            pets=st.session_state.owner.pets,          # preserve existing pets
+            preferences=st.session_state.owner.preferences,
+        )
+        st.success(f"Owner '{owner_name}' saved!")
 
-# Ensure owner always exists so the rest of the app can reference it safely
-if "owner" not in st.session_state:
-    st.session_state.owner = pawpal.Owner(
-        name=owner_name,
-        available_time_minutes=int(available_time),
-    )
+with col_persist:
+    if st.button("💾 Save to file"):
+        try:
+            st.session_state.owner.save_to_json(_SAVE_FILE)
+            st.success(f"Data saved to `{_SAVE_FILE}`")
+        except Exception as exc:
+            st.error(f"Save failed: {exc}")
 
 owner: pawpal.Owner = st.session_state.owner
 
