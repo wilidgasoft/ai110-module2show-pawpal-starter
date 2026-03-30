@@ -100,3 +100,5 @@ python -m pytest
     ![alt text](image-5.png)
 
 # Challenge 4: Professional UI and Output Formatting
+
+    /Users/wilidga/Developer/CodePATH_AI/week 5/ai110-module2show-pawpal-starter/image-6.png
