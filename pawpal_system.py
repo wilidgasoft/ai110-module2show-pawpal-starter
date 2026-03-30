@@ -13,6 +13,25 @@ _FREQUENCY_DELTA: dict[str, timedelta] = {
     "weekly":      timedelta(weeks=1),
 }
 
+# Maps the numeric priority field (1–5) to a human-readable label with emoji.
+# 1–2 → Low, 3 → Medium, 4 → High, 5 → Critical.
+# Used by CareTask.priority_label and by the Streamlit color-coding logic.
+PRIORITY_META: dict[int, tuple[str, str]] = {
+    1: ("🟢", "Low"),
+    2: ("🟢", "Low"),
+    3: ("🟡", "Medium"),
+    4: ("🔴", "High"),
+    5: ("🚨", "Critical"),
+}
+
+# Background colours (CSS hex) matched to each tier — consumed by app.py pandas styling.
+PRIORITY_BG: dict[str, str] = {
+    "Low":      "#d4edda",  # soft green
+    "Medium":   "#fff3cd",  # soft amber
+    "High":     "#f8d7da",  # soft red
+    "Critical": "#f5c6cb",  # deeper red
+}
+
 
 @dataclass
 class CareTask:
@@ -56,6 +75,20 @@ class CareTask:
             notes=self.notes,
             scheduled_date=next_date.isoformat(),
         )
+
+    @property
+    def priority_label(self) -> str:
+        """Return the emoji + tier name for this task's numeric priority.
+
+        Looks up PRIORITY_META using the integer priority field and joins the
+        two-element tuple into a display string (e.g. '🔴 High').
+        Falls back to the raw number if the value is out of range.
+        """
+        meta = PRIORITY_META.get(self.priority)
+        if meta is None:
+            return str(self.priority)
+        emoji, label = meta
+        return f"{emoji} {label}"
 
     def is_skippable(self) -> bool:
         """Return True if the task is optional and can be skipped."""
@@ -256,6 +289,23 @@ class Schedule:
         value in notes are treated as time 0 (midnight) and sorted first.
         """
         self.tasks.sort(key=lambda task: self._to_minutes(task.notes) or 0)
+
+    def sort_by_priority_then_time(self) -> None:
+        """Sort tasks in-place by priority descending, then by start time ascending.
+
+        Uses a compound key: (-priority, start_minutes). Negating priority makes
+        higher values sort first while keeping Python's default ascending sort
+        direction for the time component. Tasks with no parseable HH:MM time are
+        placed at the end of their priority group (they receive float('inf') as
+        their time key so they naturally sink to the bottom within the group).
+
+        This is strictly stronger than sort_by_priority() alone: tasks at the
+        same urgency level are further ordered chronologically so the rendered
+        schedule reads like a real day plan.
+        """
+        self.tasks.sort(
+            key=lambda t: (-t.priority, self._to_minutes(t.notes) or float("inf"))
+        )
 
     def mark_task_complete(self, task_id: str) -> CareTask | None:
         """Mark a task as done and automatically append its next occurrence to the schedule.

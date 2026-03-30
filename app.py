@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import date
 from pathlib import Path
+import pandas as pd
 import pawpal_system as pawpal
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
@@ -93,6 +94,14 @@ else:
     )
     target_pet = next(p for p in owner.pets if p.name == target_pet_name)
 
+    # Map the three user-facing tiers to representative numeric priorities.
+    _PRIORITY_OPTIONS = {
+        "🟢 Low (1)":      1,
+        "🟡 Medium (3)":   3,
+        "🔴 High (4)":     4,
+        "🚨 Critical (5)": 5,
+    }
+
     col1, col2, col3 = st.columns(3)
     with col1:
         task_name = st.text_input("Task name", value="Morning walk")
@@ -101,8 +110,9 @@ else:
             ["exercise", "nutrition", "medical", "grooming", "enrichment"],
         )
     with col2:
-        duration  = st.number_input("Duration (min)", min_value=1, max_value=240, value=20)
-        priority  = st.slider("Priority (1 low → 5 critical)", 1, 5, 3)
+        duration       = st.number_input("Duration (min)", min_value=1, max_value=240, value=20)
+        priority_label = st.selectbox("Priority", list(_PRIORITY_OPTIONS.keys()), index=2)
+        priority       = _PRIORITY_OPTIONS[priority_label]
     with col3:
         frequency   = st.selectbox("Frequency", ["daily", "twice_daily", "weekly"])
         is_required = st.checkbox("Required?", value=True)
@@ -126,7 +136,51 @@ st.divider()
 # ── Today's Schedule ──────────────────────────────────────────────────────────
 st.header("4. Today's Schedule")
 
-sort_mode = st.radio("Sort tasks by", ["Time", "Priority"], horizontal=True)
+sort_mode = st.radio(
+    "Sort tasks by",
+    ["Time", "Priority", "Priority → Time"],
+    horizontal=True,
+)
+
+# Legend shown alongside the radio so users understand the colour scheme at a glance.
+st.caption(
+    "Priority colours — "
+    "🟢 Low &nbsp;&nbsp; 🟡 Medium &nbsp;&nbsp; 🔴 High &nbsp;&nbsp; 🚨 Critical"
+)
+
+
+def _styled_table(tasks: list) -> None:
+    """Render tasks as a colour-coded dataframe.
+
+    Builds a DataFrame whose 'Priority' column shows the emoji + tier label.
+    A pandas Styler then fills each row's background with the soft colour
+    matched to that tier from PRIORITY_BG, making the urgency scannable
+    at a glance without reading the label text.
+    """
+    rows = [
+        {
+            "Task":     t.name,
+            "Start":    t.notes or "—",
+            "Duration": f"{t.duration_minutes} min",
+            "Category": t.category,
+            "Priority": t.priority_label,          # e.g. "🔴 High"
+            "Required": "✅" if t.is_required else "—",
+            "Done":     "✔" if t.completed else "",
+        }
+        for t in tasks
+    ]
+    df = pd.DataFrame(rows)
+
+    def _row_bg(row: pd.Series) -> list[str]:
+        # Extract the tier word (second token after the emoji) from the Priority cell.
+        tier = row["Priority"].split()[-1] if row["Priority"] else ""
+        colour = pawpal.PRIORITY_BG.get(tier, "")
+        bg = f"background-color: {colour}" if colour else ""
+        return [bg] * len(row)
+
+    styled = df.style.apply(_row_bg, axis=1)
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+
 
 if st.button("Generate Schedule"):
     if not owner.pets or all(len(p.care_tasks) == 0 for p in owner.pets):
@@ -139,14 +193,15 @@ if st.button("Generate Schedule"):
             if not pet.care_tasks:
                 continue
 
-            # Build a Schedule and sort it using the Scheduler methods
             schedule = pawpal.Schedule(
                 date=today, owner=owner, pet=pet, tasks=list(pet.care_tasks)
             )
             if sort_mode == "Time":
                 schedule.sort_by_time()
-            else:
+            elif sort_mode == "Priority":
                 schedule.sort_by_priority()
+            else:  # "Priority → Time"
+                schedule.sort_by_priority_then_time()
 
             st.subheader(f"🐾 {pet.name} ({pet.breed})")
 
@@ -158,25 +213,13 @@ if st.button("Generate Schedule"):
                     "fix these before starting your day:"
                 )
                 for conflict in conflicts:
-                    # Strip the "CONFLICT [PetName]  " prefix for plain-English display
                     readable = conflict.split("  ", 1)[-1] if "  " in conflict else conflict
                     st.warning(f"**Overlap:** {readable}")
             else:
                 st.success("No scheduling conflicts — all clear!")
 
-            # ── Task table ───────────────────────────────────────────────────
-            rows = [
-                {
-                    "Task": t.name,
-                    "Start": t.notes or "—",
-                    "Duration": f"{t.duration_minutes} min",
-                    "Category": t.category,
-                    "Priority": f"{t.priority}/5",
-                    "Required": "Yes" if t.is_required else "No",
-                }
-                for t in schedule.tasks
-            ]
-            st.table(rows)
+            # ── Colour-coded task table ───────────────────────────────────────
+            _styled_table(schedule.tasks)
 
             total_minutes += sum(t.duration_minutes for t in schedule.tasks)
 
