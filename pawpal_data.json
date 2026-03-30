@@ -1,0 +1,17 @@
+{
+  "name": "Wilman",
+  "available_time_minutes": 180,
+  "preferences": [],
+  "pets": [
+    {
+      "name": "Chester",
+      "species": "Dog",
+      "breed": "Labrado",
+      "age_years": 5.0,
+      "weight_kg": 39.0,
+      "medical_notes": "",
+      "vet": null,
+      "care_tasks": []
+    }
+  ]
+}

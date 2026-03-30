@@ -90,3 +90,13 @@ python -m pytest
 4. **No slot found** — if the cursor reaches `1440` (midnight) without a gap, `None` is returned.
 
 **Why it's non-trivial:** the merge step prevents false positives when two tasks overlap (without it, a gap could be counted inside a combined occupied block). The sentinel band at end-of-day simplifies the boundary check so the same loop handles both inter-block gaps and the trailing gap after the last task.
+
+# Challenge 2 Data Persistence with Agent Mode
+
+    ![alt text](image-4.png)
+
+# Challenge 3: Advanced Priority Scheduling and UI
+
+    ![alt text](image-5.png)
+
+# Challenge 4: Professional UI and Output Formatting

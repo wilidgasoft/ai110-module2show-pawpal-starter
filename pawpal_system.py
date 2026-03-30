@@ -32,6 +32,22 @@ PRIORITY_BG: dict[str, str] = {
     "Critical": "#f5c6cb",  # deeper red
 }
 
+# Emoji icons for each task category — used in both CLI (main.py) and Streamlit (app.py).
+CATEGORY_EMOJI: dict[str, str] = {
+    "exercise":   "🏃",
+    "nutrition":  "🍖",
+    "medical":    "💊",
+    "grooming":   "✂️",
+    "enrichment": "🧸",
+}
+
+# Short human-readable labels for frequency values.
+FREQUENCY_LABEL: dict[str, str] = {
+    "daily":       "Daily",
+    "twice_daily": "2×/day",
+    "weekly":      "Weekly",
+}
+
 
 @dataclass
 class CareTask:
