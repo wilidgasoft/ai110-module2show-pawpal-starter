@@ -75,3 +75,18 @@ python -m pytest
 ![alt text](image-1.png)
 ![alt text](image-2.png)
 ![alt text](image-3.png)
+
+# Challenge 1
+
+## Third Algorithmic Capability — `find_next_available_slot`
+
+**What it does:** Given a desired `duration_minutes` and an optional `earliest_start` time (default `"07:00"`), it scans the day's timeline and returns the first `"HH:MM"` slot where that many consecutive minutes are free.
+
+**How the logic works:**
+
+1. **Collect intervals** — every timed task (those with a parseable `HH:MM` in `notes`) is converted to a `(start, end)` tuple using the existing `_to_minutes()` helper.
+2. **Merge overlapping blocks** — intervals are sorted by start time, then merged in a single linear pass so that overlapping or back-to-back tasks form one contiguous occupied band.
+3. **Sweep for gaps** — a `probe` cursor starts at `earliest_start` and advances through the merged bands. The first gap between `probe` and the next band's start that is ≥ `duration_minutes` is returned as `"HH:MM"`.
+4. **No slot found** — if the cursor reaches `1440` (midnight) without a gap, `None` is returned.
+
+**Why it's non-trivial:** the merge step prevents false positives when two tasks overlap (without it, a gap could be counted inside a combined occupied block). The sentinel band at end-of-day simplifies the boundary check so the same loop handles both inter-block gaps and the trailing gap after the last task.

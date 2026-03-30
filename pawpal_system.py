@@ -287,6 +287,57 @@ class Schedule:
             if a_start < b_end and b_start < a_end
         ]
 
+    def find_next_available_slot(self, duration_minutes: int, earliest_start: str = "07:00") -> str | None:
+        """Return the earliest HH:MM gap in the day that fits duration_minutes.
+
+        Algorithm (timeline sweep):
+        1. Collect all timed tasks as (start, end) intervals; ignore untimed tasks.
+        2. Sort intervals by start time and merge any overlapping/adjacent blocks
+           into a flat list of occupied bands.
+        3. Probe the gaps between consecutive bands (and before the first band)
+           starting from earliest_start. The first gap whose length ≥ duration_minutes
+           is returned as "HH:MM".
+        4. If no gap is found before minute 1440 (midnight), return None.
+
+        Args:
+            duration_minutes: Minimum number of consecutive free minutes needed.
+            earliest_start: The earliest time to consider, as "HH:MM" (default "07:00").
+
+        Returns:
+            The slot start time as "HH:MM", or None if no slot exists today.
+        """
+        floor = self._to_minutes(earliest_start) or 0
+        end_of_day = 24 * 60  # 1440
+
+        # Build sorted occupied intervals from timed tasks
+        intervals: list[tuple[int, int]] = sorted(
+            (s, s + t.duration_minutes)
+            for t in self.tasks
+            if (s := self._to_minutes(t.notes)) is not None
+        )
+
+        # Merge overlapping / adjacent intervals
+        merged: list[tuple[int, int]] = []
+        for start, end in intervals:
+            if merged and start <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+            else:
+                merged.append((start, end))
+
+        # Probe gaps: before first block, between blocks, after last block
+        probe = floor
+        boundaries = [(end_of_day, end_of_day)]  # sentinel at end-of-day
+        for band_start, band_end in (merged + boundaries):
+            gap = band_start - probe
+            if gap >= duration_minutes:
+                h, m = divmod(probe, 60)
+                return f"{h:02d}:{m:02d}"
+            probe = max(probe, band_end)
+            if probe >= end_of_day:
+                break
+
+        return None
+
     def filter_tasks(self, *, completed: bool | None = None, pet_name: str | None = None) -> list[CareTask]:
         """Return a filtered subset of this schedule's tasks in a single pass.
 
